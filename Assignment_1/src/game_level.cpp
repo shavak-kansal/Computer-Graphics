@@ -38,8 +38,14 @@ void GameLevel::Draw(SpriteRenderer &renderer)
         if (!tile.Destroyed)
             tile.Draw(renderer);
 
+    for (GameObject &tile : this->Coins)
+        if (!tile.Destroyed)
+            tile.Draw(renderer);
+
     for (GameObject &tile : this->Enemies)
         tile.Draw(renderer);
+
+    exitGate->Draw(renderer);
 }
 
 bool GameLevel::IsCompleted()
@@ -80,20 +86,30 @@ void GameLevel::init(std::vector<std::vector<unsigned int>> tileData, unsigned i
             if(tileData[y][x] == 1){
                 glm::vec2 pos(unit_width * x, unit_height * y);
                 glm::vec2 size(unit_width, unit_height);
+
                 GameObject obj(pos, size, ResourceManager::GetTexture("obstacle"), glm::vec3(1.0f));
                 obj.IsSolid = true;
                 this->Obstacles.push_back(obj);
+
+                glm::vec2 pos1(unit_width * std::abs((x-1)*1.0f), unit_height * y);
+                glm::vec2 size1(unit_width/2, unit_height/2);
+
+                //EnemyObject obj1(pos1, unit_width/4, glm::vec2(20.0f * (rand()%10 + 2), 20.0f * (rand()%10 + 2)), ResourceManager::GetTexture("obstacle"));
+                GameObject obj1(pos1, size1, ResourceManager::GetTexture("door"), glm::vec3(1.0f, 0.0f, 0.0f), 100.0f * glm::normalize(glm::vec2(1.0f, 1.0f)));
+                Enemies.push_back(obj1);
+
+                glm::vec2 pos2(unit_width * std::abs((x-2)*1.0f), unit_height * y);
+                glm::vec2 size2(unit_width/3, unit_height/3);
+
+                //EnemyObject obj1(pos1, unit_width/4, glm::vec2(20.0f * (rand()%10 + 2), 20.0f * (rand()%10 + 2)), ResourceManager::GetTexture("obstacle"));
+                GameObject obj2(pos2, size2, ResourceManager::GetTexture("coin"), glm::vec3(1.0f), glm::vec2(90.0f, 90.0f), 0.0f);
+                Coins.push_back(obj2);
             }
         }
     }
 
-    glm::vec2 pos(unit_width*(0.0f) + 0.0f, unit_height*(0.0f) + 0.0f);
-    glm::vec2 size(unit_width/2, unit_height/2);
-    //GameObject obj(pos, size, ResourceManager::GetTexture("awesome"), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec2(20.0f * (rand()%10 + 2), 20.0f * (rand()%10 + 2)));
-    
-    EnemyObject obj(pos, unit_width/4, glm::vec2(20.0f * (rand()%10 + 2), 20.0f * (rand()%10 + 2)), ResourceManager::GetTexture("awesome"));
-    obj.IsSolid = true;
-    
-    Enemies.push_back(obj);
-
+    glm::vec2 pos(unit_width * (width) - unit_width*0.5f, unit_height * (height-1)/2.0f);
+    glm::vec2 size(unit_width/2, unit_height);
+     
+    exitGate = new GameObject(pos, size, ResourceManager::GetTexture("door"), glm::vec3(1.0f));;
 }

@@ -2,6 +2,7 @@
 #define ENEMYOBJECT_H
 
 #include "game_object.h"
+#include <glm/glm.hpp>
 
 class EnemyObject : public GameObject {
 	public :

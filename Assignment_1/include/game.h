@@ -12,7 +12,8 @@
 enum GameState {
     GAME_ACTIVE,
     GAME_MENU,
-    GAME_WIN
+    GAME_WIN,
+    GAME_LOSS
 };
 
 class Game
@@ -23,9 +24,11 @@ public:
     unsigned int            Width, Height;
 
     std::vector<GameLevel> Levels;
-    
     unsigned int           Level;
     
+    GameObject *Player;
+    unsigned int coinsCollected;
+
     Game(unsigned int width, unsigned int height);
     ~Game();
 
@@ -34,7 +37,9 @@ public:
     void Update(float dt);
     void Render();
 
-    void GenerateObstacles(std::string outputFile);
+    void GenerateObstacles(std::string outputFile, int numFixedObstacles);
+    bool HandleCollisions(GameObject &x, GameObject &y);
+    bool PlayerCollision();
 };
 
 #endif

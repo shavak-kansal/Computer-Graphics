@@ -18,7 +18,12 @@ public:
     // level state
     std::vector<GameObject> Bricks;
     std::vector<GameObject> Obstacles;
-    std::vector<EnemyObject> Enemies; // Moving enemies
+    std::vector<GameObject> Enemies;
+    //std::vector<EnemyObject> Enemies; // Moving enemies
+    std::vector<GameObject> Coins; 
+
+    GameObject *exitGate = nullptr;
+    
     //std::vector<GameObject> Enemies;
     // constructor
     GameLevel() { }
@@ -30,7 +35,7 @@ public:
     bool IsCompleted();
 private:
     // initialize level from tile data
-    void init(std::vector<std::vector<unsigned int>> tileData, unsigned int levelWidth, unsigned int levelHeight);
+  void init(std::vector<std::vector<unsigned int>> tileData, unsigned int levelWidth, unsigned int levelHeight);
 };
 
 #endif

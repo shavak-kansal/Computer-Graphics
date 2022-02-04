@@ -4,7 +4,7 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/home/steiner/Downloads/Assignment_1/include/",
+                "/home/steiner/Downloads/Assignment_1/include",
                 "/home/steiner/Downloads/Assignment_1/libraries/glfw/include/",
                 "/home/steiner/Downloads/Assignment_1/libraries/glm/",
                 "/home/steiner/Downloads/Assignment_1/libraries/glad/include/"
