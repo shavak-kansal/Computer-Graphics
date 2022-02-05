@@ -65,16 +65,19 @@ CollisionInfo CheckCollision(GameObject &one, GameObject &two) // AABB - AABB co
 
 
 Game::Game(unsigned int width, unsigned int height) 
-    : State(GAME_ACTIVE), Keys(), Width(width), Height(height), coinsCollected(0){}
+    : State(GAME_ACTIVE), Keys(), Width(width), Height(height), coinsCollected(0), phaseFuel(100.0f), PhaseFlag(false), playerLives(100){}
 
 Game::~Game(){
 }
 
 void Game::Init(){
-    this->GenerateObstacles(std::string("../levels/level1.txt"), 2);
-    this->GenerateObstacles(std::string("../levels/level2.txt"), 3);
-    this->GenerateObstacles(std::string("../levels/level3.txt"), 4);
+    this->GenerateObstacles(std::string("../levels/level1.txt"), 2, 12, 9);
+    this->GenerateObstacles(std::string("../levels/level2.txt"), 3, 12, 9);
+    this->GenerateObstacles(std::string("../levels/level3.txt"), 4, 16, 12);
     
+    this->MapGenerator(std::string("../levels/level1.txt"), 25, 5, 20, 12, 9);
+    this->MapGenerator(std::string("../levels/level2.txt"), 30, 10, 20, 12, 9);
+    this->MapGenerator(std::string("../levels/level3.txt"), 30, 15, 40, 12, 9);
     // load shaders
     ResourceManager::LoadShader("../src/shaders/sprite.vs", "../src/shaders/sprite.frag", nullptr, "sprite");
     // configure shaders
@@ -85,6 +88,16 @@ void Game::Init(){
     Renderer = new SpriteRenderer(ResourceManager::GetShader("sprite"));
     // load textures
     ResourceManager::LoadTexture("../textures/tileable4g.png", false, "background");
+
+    ResourceManager::LoadTexture("../textures/brick_texture_seamless_-_outdoor_stone_brick_wall_002.jpg", false, "background0");
+    ResourceManager::LoadTexture("../textures/distressed_wood_textures_1.jpg", false, "background1");
+    ResourceManager::LoadTexture("../textures/wood_textures_hd_2.jpg", false, "background2");
+
+    BackgroundImages.push_back("background0");
+    BackgroundImages.push_back("background1");
+    BackgroundImages.push_back("background2");
+
+
     ResourceManager::LoadTexture("../textures/awesomeface.png", true, "awesome");
     ResourceManager::LoadTexture("../textures/container004-blue.png", false, "obstacle");
     ResourceManager::LoadTexture("../textures/PNG/SILVER/BIG/BIG_0000_Capa-1.png", true, "coin");
@@ -98,22 +111,31 @@ void Game::Init(){
     Levels.push_back(GameLevel());
     Levels.push_back(GameLevel());
 
+    Levels[0].enemyVelocity = 150.0f;
+    Levels[0].fracChasing = 0.0f;
     Levels[0].Load("../levels/level1.txt", this->Width, this->Height);
-    Levels[1].Load("../levels/level1.txt", this->Width, this->Height);
-    Levels[2].Load("../levels/level1.txt", this->Width, this->Height);
     
-    Player = new GameObject(glm::vec2(Width/2.0f, Height/2.0f), glm::vec2(50.0f, 50.0f) , ResourceManager::GetTexture("awesome"), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec2(200.0f, 200.0f));
+    Levels[1].enemyVelocity = 200.0f;
+    Levels[1].fracChasing = 0.0f;
+    Levels[1].Load("../levels/level2.txt", this->Width, this->Height);
+
+    Levels[2].enemyVelocity = 200.0f;
+    Levels[2].fracChasing = 0.3f;
+    Levels[2].Load("../levels/level3.txt", this->Width, this->Height);
+
+
+    Player = new GameObject(glm::vec2(0.0f, Height/2.0f), glm::vec2(50.0f, 50.0f) , ResourceManager::GetTexture("awesome"), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec2(200.0f, 200.0f));
 
     this->Level = 0;
 }
 
-void Game::GenerateObstacles(std::string outputFile, int numFixedObstacles){
+void Game::GenerateObstacles(std::string outputFile, int numFixedObstacles, int wid, int high){
     std::ofstream fileOut;
 
     fileOut.open(outputFile);
 
-    int width = 12;
-    int height = 9;
+    int width = wid;
+    int height = high;
     
     srand(time(NULL));
 
@@ -124,7 +146,6 @@ void Game::GenerateObstacles(std::string outputFile, int numFixedObstacles){
         {
             pos.push_back(rand()%(width-1));
         }
-        //pos.push_back(rand()%width);
 
         for(int j = 0 ; j < width ; j++){
             if(std::find(pos.begin(), pos.end(), j) == pos.end())
@@ -137,77 +158,110 @@ void Game::GenerateObstacles(std::string outputFile, int numFixedObstacles){
     }
 }
 
-bool Game::HandleCollisions(GameObject &x, GameObject &y){
+void Game::MapGenerator(std::string outputFile, int numStatic, int numMoving, int numCoins, int width, int height){
+    std::ofstream fileOut;
+    fileOut.open(outputFile);
+
+    std::vector<std::vector<int>> grid(height);
+
+    for(auto &x : grid)
+        x = std::vector<int>(width);
+
+    int cntStatic = numStatic;
+    int cntMoving = numMoving;
+    int cntCoins = numCoins;
+
+    srand(time(NULL));
+
+    while(cntStatic > 0){
+        int x = rand()%(width-2) + 1;
+        int y = rand()%height;
+
+        if(grid[y][x] == 0){
+            grid[y][x] = 1;
+            cntStatic--;
+        }
+    }
+
+    while(cntMoving > 0){
+        int x = rand()%rand()%(width-2) + 1;
+        int y = rand()%height;
+
+        if(grid[y][x] == 0){
+            grid[y][x] = 2;
+            cntMoving--;
+        }
+    }
+
+    while(cntCoins){
+        int x = rand()%width;
+        int y = rand()%height;
+
+        if(grid[y][x] == 0){
+            grid[y][x] = 3;
+            cntCoins--;
+        }
+    }
+
+    for(int i = 0 ; i < height ; i++){
+        for(int j = 0 ; j < width ; j++){
+            fileOut << grid[i][j] << " ";
+        }
+        fileOut << std::endl;
+    }
+}
+
+bool Game::CollisionResolution(GameObject &x, GameObject &y){
     auto res = CheckCollision(x, y);
 
-    glm::vec2 direction[4] = {glm::vec2(1.0f, 0.0f), glm::vec2(-1.0f, .0f), glm::vec2(0.0f, 1.0f), glm::vec2(0.0f, -1.0f)};
-
     if(res.second){
-        // glm::vec2 directionVec = y.Position + (y.Size/(1.0f)) - x.Position - (x.Size/(1.0f));
-        // x.Velocity += (-2.0f)* glm::dot(x.Velocity,  glm::normalize(directionVec)) * glm::normalize(directionVec) ;
-
-        std::cout<<"\r"<<"Ye Collision Happening"<<std::flush;
-        // x.Velocity.x = -1.0f * res.first.x * std::abs(x.Velocity.x);
-        // x.Velocity.x = -1.0f * res.first.y * std::abs(x.Velocity.y);      
-        
         glm::vec2 directionVec = y.Position + (y.Size/(2.0f)) - x.Position - (x.Size/(2.0f));
-        
-        //x.Velocity += (-2.0f)* glm::dot(x.Velocity,  glm::normalize(directionVec)) * glm::normalize(directionVec) ;
-        
-        //x.Velocity = (-1.0f) * glm::abs(x.Velocity) * glm::normalize(directionVec);
-        x.Velocity = (-1.0f) * (100.0f) * glm::normalize(directionVec);
-        
+        float vel = glm::length(x.Velocity);
+
+        x.Velocity = (-1.0f) * vel * glm::normalize(directionVec);
         return true;    
     }
     else {
-        std::cout<<"\r"<<"No Collision Happening"<<std::flush;
         return false;
     }
 }
 
-void Game::Update(float dt)
-{   
-    //std::cout<<"Grand"<<std::endl;
-
+void Game::HandleCollisions(){
     for (auto &x : this->Levels[this->Level].Enemies){
-        int chance = rand()%100;
-    
-        if(chance > 97)
-            x.Velocity = (100.0f) * glm::normalize(Player->Position - x.Position);
-    }
-    
-    for (auto &x : this->Levels[this->Level].Enemies){
-        for(auto &y : Levels[Level].Obstacles){
-            HandleCollisions(x, y);
-        }
 
         for(auto &y : Levels[Level].Coins){
-            HandleCollisions(x, y);
+            CollisionResolution(x, y);
         }
 
         for(auto &y : Levels[Level].Enemies){
             if(&y == &x)
                 continue;
-            HandleCollisions(x, y);
+            CollisionResolution(x, y);
         }
+
+        for(auto &y : Levels[Level].Obstacles){
+            CollisionResolution(x, y);
+        }
+
+        CollisionResolution(x, *Player);
     }
 
     for (auto &x : this->Levels[this->Level].Coins){
 
         for(auto &y : Levels[Level].Obstacles){
-            HandleCollisions(x, y);
+            CollisionResolution(x, y);
         }
 
         for(auto &y : Levels[Level].Coins){
             if(&y == &x)
                 continue;
-            HandleCollisions(x, y);
+            CollisionResolution(x, y);
         }
 
         for(auto &y : Levels[Level].Enemies){
             if(&y == &x)
                 continue;
-            HandleCollisions(x, y);
+            CollisionResolution(x, y);
         }
     }
 
@@ -221,9 +275,75 @@ void Game::Update(float dt)
         }
     }
 
+    bool death = false;
 
-    for(auto &x : Levels[Level].Coins);
+    for(auto &y : Levels[Level].Enemies)
+        if(CheckCollision(*Player, y).second){
+            death = true;
+            CollisionResolution(y, *Player);
+        }
 
+    if(death){
+        if(this->playerLives <= 0)
+            this->State = GAME_LOSS;
+        else 
+            this->playerLives--;
+    }
+}
+
+bool Game::PlayerCollision(){
+
+    if(Keys[80])
+        return false;
+
+    for(auto &y : Levels[Level].Obstacles){
+        if(CheckCollision(*Player, y).second)
+            return true;
+    }
+
+    for(auto &y : Levels[Level].Enemies){
+        if(CheckCollision(*Player, y).second)
+            return true;
+    }
+
+    return false;
+}
+
+void Game::Update(float dt){   
+    if(phaseFuel <= 0)
+        Keys[GLFW_KEY_P] = false;
+
+    float decreaseFuel = dt*70;
+    float increaseFuel = dt*10;
+
+    if(Keys[GLFW_KEY_P]){
+        phaseFuel -= decreaseFuel;
+        std::cout<<"\r"<<"Decreasing phase fuel by :"<<(decreaseFuel)<<std::flush;
+    }
+    else {
+        if(phaseFuel >= 100.0f)
+            phaseFuel = 100.0f;
+        else
+        {
+            std::cout<<"\r"<<"Increasing phase fuel by :"<<(increaseFuel)<<std::flush;
+            phaseFuel += increaseFuel;
+        }
+    }
+
+    for(auto x : Levels[Level].listChasing){
+        Levels[Level].Enemies[x].Velocity = Levels[Level].enemyVelocity/1.0f * glm::normalize(Player->Position - Levels[Level].Enemies[x].Position);
+    }
+
+    if(CheckCollision(*Player, *(Levels[Level].exitGate)).second){
+        if(Level == 2){
+            this->State = GAME_WIN;
+        }
+        else{
+            Level++;
+            Player->Position = glm::vec2(0.0f, (Height-1)/2.0f);
+        }
+    }
+    HandleCollisions();
     //std::cout << "Coordinates displayed in update function 1 : " << Levels[Level].Enemies[0].Position.x << " " << Levels[Level].Enemies[0].Position.y <<std::endl;
     for ( auto &x : Levels[Level].Enemies){
         x.HandleMovement(dt,Width,Height);
@@ -232,19 +352,12 @@ void Game::Update(float dt)
     for ( auto &x : Levels[Level].Coins){
         x.HandleMovement(dt,Width,Height);
     }
+
+    
 }
 
-bool Game::PlayerCollision(){
-    for(auto &y : Levels[Level].Obstacles){
-        if(CheckCollision(*Player, y).second)
-            return true;
-    }
 
-    return false;
-}
-
-void Game::ProcessInput(float dt)
-{
+void Game::ProcessInput(float dt){
     if (this->State == GAME_ACTIVE)
     {
         // move playerboard
@@ -302,7 +415,11 @@ void Game::Render()
     if(this->State == GAME_ACTIVE)
     {
         // draw background
-        Renderer->DrawSprite(ResourceManager::GetTexture("background"), 
+        // Renderer->DrawSprite(ResourceManager::GetTexture("background"), 
+        //     glm::vec2(0.0f, 0.0f), glm::vec2(this->Width, this->Height), 0.0f
+        // );
+
+        Renderer->DrawSprite(ResourceManager::GetTexture(BackgroundImages[Level]), 
             glm::vec2(0.0f, 0.0f), glm::vec2(this->Width, this->Height), 0.0f
         );
 
@@ -311,10 +428,24 @@ void Game::Render()
         Player->Draw(*Renderer);
 
         std::string toPrint = "Coins Collected:" + std::to_string(coinsCollected);
-        
         Text->RenderText(toPrint, 5.0f, 5.0f, 1.0f);
 
+        toPrint = "Phase Fuel : " + std::to_string(phaseFuel);
+        Text->RenderText(toPrint, 5.0f, 25.0f, 1.0f);
+
+        toPrint = "Lives Left : " + std::to_string(playerLives);
+        Text->RenderText(toPrint, 5.0f, 45.0f, 1.0f);
         // draw level
         //this->Levels[this->Level].Draw(*Renderer);
+    }
+    if(this->State == GAME_WIN){
+        std::string toPrint = "YOU WIN";
+        
+        Text->RenderText(toPrint, 5.0f, 5.0f, 2.0f);
+    }
+    if(this->State == GAME_LOSS){
+        std::string toPrint = "YOU LOSS";
+        
+        Text->RenderText(toPrint, 5.0f, 5.0f, 2.0f);
     }
 }

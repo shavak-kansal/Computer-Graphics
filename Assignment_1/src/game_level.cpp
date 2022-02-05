@@ -3,6 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <algorithm>
 
 void GameLevel::Load(const char *file, unsigned int levelWidth, unsigned int levelHeight)
 {
@@ -91,21 +92,47 @@ void GameLevel::init(std::vector<std::vector<unsigned int>> tileData, unsigned i
                 obj.IsSolid = true;
                 this->Obstacles.push_back(obj);
 
-                glm::vec2 pos1(unit_width * std::abs((x-1)*1.0f), unit_height * y);
-                glm::vec2 size1(unit_width/2, unit_height/2);
+                
+            }
+            else if(tileData[y][x] == 2){
+                glm::vec2 pos1(unit_width * x, unit_height * y);
+                glm::vec2 size1(unit_width/3, unit_height/3);
 
                 //EnemyObject obj1(pos1, unit_width/4, glm::vec2(20.0f * (rand()%10 + 2), 20.0f * (rand()%10 + 2)), ResourceManager::GetTexture("obstacle"));
-                GameObject obj1(pos1, size1, ResourceManager::GetTexture("door"), glm::vec3(1.0f, 0.0f, 0.0f), 100.0f * glm::normalize(glm::vec2(1.0f, 1.0f)));
+                GameObject obj1(pos1, size1, ResourceManager::GetTexture("obstacle"), glm::vec3(1.0f), enemyVelocity * glm::normalize(glm::vec2(1.0f, 1.0f)));
                 Enemies.push_back(obj1);
-
-                glm::vec2 pos2(unit_width * std::abs((x-2)*1.0f), unit_height * y);
-                glm::vec2 size2(unit_width/3, unit_height/3);
+            }
+            else if(tileData[y][x] == 3){
+                glm::vec2 pos2(unit_width * x, unit_height * y);
+                glm::vec2 size2(unit_width/4, unit_height/4);
 
                 //EnemyObject obj1(pos1, unit_width/4, glm::vec2(20.0f * (rand()%10 + 2), 20.0f * (rand()%10 + 2)), ResourceManager::GetTexture("obstacle"));
-                GameObject obj2(pos2, size2, ResourceManager::GetTexture("coin"), glm::vec3(1.0f), glm::vec2(90.0f, 90.0f), 0.0f);
-                Coins.push_back(obj2);
+                GameObject obj2(pos2, size2, ResourceManager::GetTexture("coin"), glm::vec3(1.0f), enemyVelocity * glm::normalize(glm::vec2(1.0f, 1.0f)), 0.0f);
+                Coins.push_back(obj2);   
+            }
+
+        }
+    }
+
+    for(int i = 0; i < fracChasing*Enemies.size() ; i++){
+        while(1){
+            int index = rand()%(Enemies.size());
+            
+            if(std::find(listChasing.begin(), listChasing.end(), index) == listChasing.end()){
+                listChasing.push_back(index);
+                break;
             }
         }
+    }
+
+    // std::cout << "Fraction chasing : " << fracChasing << std::endl;
+    // std::cout << "Enemy Velocity : " << enemyVelocity << std::endl;
+    // std::cout << "List of chasing enemies out of : " << Enemies.size()<< std::endl;
+    // std::cout << std::endl;
+
+    for(auto x : listChasing){
+        Enemies[x].Color = glm::vec3(1.0f, 0.0f, 0.0f);
+        //Enemies[x]
     }
 
     glm::vec2 pos(unit_width * (width) - unit_width*0.5f, unit_height * (height-1)/2.0f);

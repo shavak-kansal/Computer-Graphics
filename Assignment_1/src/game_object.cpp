@@ -1,4 +1,6 @@
 #include "game_object.h"
+#include "game.h"
+
 #include <iostream>
 
 // GameObject::GameObject() 
@@ -14,24 +16,23 @@ void GameObject::Draw(SpriteRenderer &renderer)
 
 void GameObject::HandleMovement(float dt,unsigned int Width,unsigned int Height){
 
-  this->Position += this->Velocity * dt;
+    this->Position += this->Velocity * dt;
 
+    if (this->Position.x <= 0.0f){
+        this->Velocity.x = -this->Velocity.x;
+        this->Position.x = 0.0f;
+    }
+    else if (this->Position.x + this->Size.x >= Width){
+        this->Velocity.x = -this->Velocity.x;
+        this->Position.x = Width - this->Size.x;
+    }
 
-  if (this->Position.x <= 0.0f){
-    this->Velocity.x = -this->Velocity.x;
-    this->Position.x = 0.0f;
-}
-else if (this->Position.x + this->Size.x >= Width){
-    this->Velocity.x = -this->Velocity.x;
-    this->Position.x = Width - this->Size.x;
-}
-
-if (this->Position.y <= 0.0f){
-    this->Velocity.y = -this->Velocity.y;
-    this->Position.y = 0.0f;
-}
-else if (this->Position.y + this->Size.y >= Height){
-    this->Velocity.y = -this->Velocity.y;
-    this->Position.y = Height - this->Size.y;
-}
+    if (this->Position.y <= 0.0f){
+        this->Velocity.y = -this->Velocity.y;
+        this->Position.y = 0.0f;
+    }
+    else if (this->Position.y + this->Size.y >= Height){
+        this->Velocity.y = -this->Velocity.y;
+        this->Position.y = Height - this->Size.y;
+    }
 }

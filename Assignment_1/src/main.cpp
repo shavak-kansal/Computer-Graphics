@@ -15,6 +15,7 @@ const unsigned int SCREEN_HEIGHT = 900;
 
 Game Escape(SCREEN_WIDTH, SCREEN_HEIGHT);
 
+
 int main(int argc, char *argv[])
 {
     glfwInit();
@@ -52,6 +53,7 @@ int main(int argc, char *argv[])
 
     float deltaTime = 0.0f;
     float lastFrame = 0.0f;
+
 
     while(!glfwWindowShouldClose(window))
     {

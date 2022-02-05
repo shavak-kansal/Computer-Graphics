@@ -24,10 +24,15 @@ public:
     unsigned int            Width, Height;
 
     std::vector<GameLevel> Levels;
+    std::vector<std::string> BackgroundImages;
     unsigned int           Level;
     
     GameObject *Player;
     unsigned int coinsCollected;
+    unsigned int playerLives;
+
+    float phaseFuel;
+    bool PhaseFlag;
 
     Game(unsigned int width, unsigned int height);
     ~Game();
@@ -37,8 +42,11 @@ public:
     void Update(float dt);
     void Render();
 
-    void GenerateObstacles(std::string outputFile, int numFixedObstacles);
-    bool HandleCollisions(GameObject &x, GameObject &y);
+    void GenerateObstacles(std::string outputFile, int numFixedObstacles, int wid, int high);
+    void MapGenerator(std::string outputFile, int numStatic, int numMoving, int numCoins, int width, int height);
+    bool CollisionResolution(GameObject &x, GameObject &y);
+    void HandleCollisions();
+
     bool PlayerCollision();
 };
 

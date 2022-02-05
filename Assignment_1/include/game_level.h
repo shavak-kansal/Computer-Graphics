@@ -24,7 +24,10 @@ public:
 
     GameObject *exitGate = nullptr;
     
-    //std::vector<GameObject> Enemies;
+    float enemyVelocity;
+    float fracChasing;
+    std::vector<unsigned int> listChasing; 
+
     // constructor
     GameLevel() { }
     // loads level from file
