@@ -4,7 +4,6 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <game_level.h>
-#include <enemy_object.h>
 
 #include <iostream>
 
@@ -26,13 +25,19 @@ public:
     std::vector<GameLevel> Levels;
     std::vector<std::string> BackgroundImages;
     unsigned int           Level;
-    
+
+    unsigned int timeSeconds;
     GameObject *Player;
     unsigned int coinsCollected;
     unsigned int playerLives;
 
     float phaseFuel;
     bool PhaseFlag;
+
+    bool lightOff;
+    float lightRadius;
+
+    unsigned int time1;
 
     Game(unsigned int width, unsigned int height);
     ~Game();

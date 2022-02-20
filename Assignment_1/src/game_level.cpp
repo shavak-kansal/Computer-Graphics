@@ -99,7 +99,7 @@ void GameLevel::init(std::vector<std::vector<unsigned int>> tileData, unsigned i
                 glm::vec2 size1(unit_width/3, unit_height/3);
 
                 //EnemyObject obj1(pos1, unit_width/4, glm::vec2(20.0f * (rand()%10 + 2), 20.0f * (rand()%10 + 2)), ResourceManager::GetTexture("obstacle"));
-                GameObject obj1(pos1, size1, ResourceManager::GetTexture("obstacle"), glm::vec3(1.0f), enemyVelocity * glm::normalize(glm::vec2(1.0f, 1.0f)));
+                GameObject obj1(pos1, size1, ResourceManager::GetTexture("enemy"), glm::vec3(1.0f), enemyVelocity * glm::normalize(glm::vec2(1.0f, 1.0f)));
                 Enemies.push_back(obj1);
             }
             else if(tileData[y][x] == 3){

@@ -65,16 +65,13 @@ CollisionInfo CheckCollision(GameObject &one, GameObject &two) // AABB - AABB co
 
 
 Game::Game(unsigned int width, unsigned int height) 
-    : State(GAME_ACTIVE), Keys(), Width(width), Height(height), coinsCollected(0), phaseFuel(100.0f), PhaseFlag(false), playerLives(100){}
+    : State(GAME_ACTIVE), Keys(), Width(width), Height(height), coinsCollected(0), phaseFuel(100.0f), PhaseFlag(false), playerLives(100), lightOff(false), lightRadius(100.0f){}
 
 Game::~Game(){
 }
 
 void Game::Init(){
-    this->GenerateObstacles(std::string("../levels/level1.txt"), 2, 12, 9);
-    this->GenerateObstacles(std::string("../levels/level2.txt"), 3, 12, 9);
-    this->GenerateObstacles(std::string("../levels/level3.txt"), 4, 16, 12);
-    
+
     this->MapGenerator(std::string("../levels/level1.txt"), 25, 5, 20, 12, 9);
     this->MapGenerator(std::string("../levels/level2.txt"), 30, 10, 20, 12, 9);
     this->MapGenerator(std::string("../levels/level3.txt"), 30, 15, 40, 12, 9);
@@ -84,6 +81,7 @@ void Game::Init(){
     glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(this->Width),static_cast<float>(this->Height), 0.0f,  -1.0f, 1.0f);
     ResourceManager::GetShader("sprite").Use().SetInteger("image", 0);
     ResourceManager::GetShader("sprite").SetMatrix4("projection", projection);
+
     // set render-specific controls
     Renderer = new SpriteRenderer(ResourceManager::GetShader("sprite"));
     // load textures
@@ -100,8 +98,12 @@ void Game::Init(){
 
     ResourceManager::LoadTexture("../textures/awesomeface.png", true, "awesome");
     ResourceManager::LoadTexture("../textures/container004-blue.png", false, "obstacle");
+    ResourceManager::LoadTexture("../textures/light003.png", true, "enemy");
     ResourceManager::LoadTexture("../textures/PNG/SILVER/BIG/BIG_0000_Capa-1.png", true, "coin");
     ResourceManager::LoadTexture("../textures/sign_browndoor.png", true, "door");  
+
+    Player = new GameObject(glm::vec2(0.0f, Height/2.0f), glm::vec2(50.0f, 50.0f) , ResourceManager::GetTexture("awesome"), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec2(200.0f, 200.0f));
+    ResourceManager::GetShader("sprite").Use().SetVector2f("PlayerPosition", Player->Position);
 
     Text = new TextRenderer(this->Width, this->Height);
     Text->Load("../src/fonts/ManilaSansBld.otf", 24);
@@ -119,13 +121,12 @@ void Game::Init(){
     Levels[1].fracChasing = 0.0f;
     Levels[1].Load("../levels/level2.txt", this->Width, this->Height);
 
-    Levels[2].enemyVelocity = 200.0f;
-    Levels[2].fracChasing = 0.3f;
+    Levels[2].enemyVelocity = 180.0f;
+    Levels[2].fracChasing = 0.5f;
     Levels[2].Load("../levels/level3.txt", this->Width, this->Height);
 
 
-    Player = new GameObject(glm::vec2(0.0f, Height/2.0f), glm::vec2(50.0f, 50.0f) , ResourceManager::GetTexture("awesome"), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec2(200.0f, 200.0f));
-
+    
     this->Level = 0;
 }
 
@@ -269,8 +270,12 @@ void Game::HandleCollisions(){
         bool res = CheckCollision(*Player, x).second;
 
         if(res){
-            if(!x.Destroyed)
-                coinsCollected++;
+            if(!x.Destroyed){
+                if(lightOff)
+                    coinsCollected += 3;
+                else
+                    coinsCollected++;
+            }
             x.Destroyed = true;   
         }
     }
@@ -284,8 +289,10 @@ void Game::HandleCollisions(){
         }
 
     if(death){
-        if(this->playerLives <= 0)
+        if(this->playerLives <= 0){
             this->State = GAME_LOSS;
+            this->time1 = timeSeconds;
+        }
         else 
             this->playerLives--;
     }
@@ -294,6 +301,9 @@ void Game::HandleCollisions(){
 bool Game::PlayerCollision(){
 
     if(Keys[80])
+        return false;
+
+    if(PhaseFlag)
         return false;
 
     for(auto &y : Levels[Level].Obstacles){
@@ -310,13 +320,28 @@ bool Game::PlayerCollision(){
 }
 
 void Game::Update(float dt){   
-    if(phaseFuel <= 0)
+
+    if(this->State == GAME_WIN || this->State == GAME_LOSS)
+        return;
+
+    ResourceManager::GetShader("sprite").Use().SetVector2f("PlayerPosition", Player->Position);
+
+    if(lightOff){
+        ResourceManager::GetShader("sprite").Use().SetInteger("flag", 1);
+    }
+    else {
+        ResourceManager::GetShader("sprite").Use().SetInteger("flag", 0);
+    }
+
+    if(phaseFuel <= 0){
         Keys[GLFW_KEY_P] = false;
+        PhaseFlag = false;
+    }
 
     float decreaseFuel = dt*70;
     float increaseFuel = dt*10;
 
-    if(Keys[GLFW_KEY_P]){
+    if(Keys[GLFW_KEY_P] || PhaseFlag){
         phaseFuel -= decreaseFuel;
         std::cout<<"\r"<<"Decreasing phase fuel by :"<<(decreaseFuel)<<std::flush;
     }
@@ -337,6 +362,7 @@ void Game::Update(float dt){
     if(CheckCollision(*Player, *(Levels[Level].exitGate)).second){
         if(Level == 2){
             this->State = GAME_WIN;
+            this->time1 = timeSeconds;
         }
         else{
             Level++;
@@ -427,7 +453,7 @@ void Game::Render()
 
         Player->Draw(*Renderer);
 
-        std::string toPrint = "Coins Collected:" + std::to_string(coinsCollected);
+        std::string toPrint = "Score :" + std::to_string(coinsCollected);
         Text->RenderText(toPrint, 5.0f, 5.0f, 1.0f);
 
         toPrint = "Phase Fuel : " + std::to_string(phaseFuel);
@@ -435,6 +461,12 @@ void Game::Render()
 
         toPrint = "Lives Left : " + std::to_string(playerLives);
         Text->RenderText(toPrint, 5.0f, 45.0f, 1.0f);
+
+        toPrint = "Level " + std::to_string(Level);
+        Text->RenderText(toPrint, 5.0f, 65.0f, 1.0f);
+
+        toPrint = "Time Elapsed " + std::to_string(this->timeSeconds);
+        Text->RenderText(toPrint, 5.0f, 85.0f, 1.0f);
         // draw level
         //this->Levels[this->Level].Draw(*Renderer);
     }
@@ -442,10 +474,16 @@ void Game::Render()
         std::string toPrint = "YOU WIN";
         
         Text->RenderText(toPrint, 5.0f, 5.0f, 2.0f);
+
+        if(timeSeconds > (time1 + 5))
+            exit(0);
     }
     if(this->State == GAME_LOSS){
         std::string toPrint = "YOU LOSS";
         
         Text->RenderText(toPrint, 5.0f, 5.0f, 2.0f);
+
+        if(timeSeconds > (time1 + 5))
+            exit(0);
     }
 }

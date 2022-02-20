@@ -54,10 +54,12 @@ int main(int argc, char *argv[])
     float deltaTime = 0.0f;
     float lastFrame = 0.0f;
 
+    glfwSetTime(0.0);
 
     while(!glfwWindowShouldClose(window))
     {
         float currentFrame = glfwGetTime();
+        Escape.timeSeconds = currentFrame;
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
         glfwPollEvents();
@@ -84,6 +86,12 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
     
+    if (key == GLFW_KEY_O && action == GLFW_PRESS)
+        Escape.lightOff = !Escape.lightOff;
+
+    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+        Escape.PhaseFlag = !Escape.PhaseFlag;
+
     if (key >= 0 && key < 1024)
     {
         if (action == GLFW_PRESS)
@@ -91,6 +99,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         else if (action == GLFW_RELEASE)
             Escape.Keys[key] = false;
     }
+
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)
